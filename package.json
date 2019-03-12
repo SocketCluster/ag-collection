@@ -1,6 +1,6 @@
 {
-  "name": "sc-collection",
-  "version": "7.0.0",
+  "name": "ag-collection",
+  "version": "0.9.0",
   "description": "SocketCluster collection component for the front end",
   "main": "sc-collection.js",
   "dependencies": {
