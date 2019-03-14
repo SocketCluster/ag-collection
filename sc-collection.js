@@ -5,6 +5,7 @@ import AGModel from '../ag-model/ag-model.js';
 function AGCollection(options) {
   AsyncStreamEmitter.call(this);
 
+  this.active = true;
   this.socket = options.socket;
   this.type = options.type;
   this.fields = options.fields;
@@ -53,8 +54,10 @@ function AGCollection(options) {
     // This is to account for socket reconnects - After recovering from a lost connection,
     // we will re-fetch the whole value to make sure that we haven't missed any updates made to it.
     (async () => {
-      for await (let event of this.socket.listener('connect')) {
-        this.loadData();
+      while (this.active) {
+        for await (let event of this.socket.listener('connect')) {
+          this.loadData();
+        }
       }
     })();
 
@@ -99,9 +102,11 @@ function AGCollection(options) {
   })();
 
   (async () => {
-    for await (let event of this.channel.listener('subscribe')) {
-      // Fetch data when subscribe is successful.
-      this.loadData();
+    while (this.active) {
+      for await (let event of this.channel.listener('subscribe')) {
+        // Fetch data when subscribe is successful.
+        this.loadData();
+      }
     }
   })();
 
@@ -110,15 +115,18 @@ function AGCollection(options) {
   }
 
   (async () => {
-    for await (let {error} of this.channel.listener('subscribeFail')) {
-      this._triggerCollectionError(error);
+    while (this.active) {
+      for await (let {error} of this.channel.listener('subscribeFail')) {
+        this._triggerCollectionError(error);
+      }
     }
   })();
 
-  // TODO 2: Always rebind while instance is active?
   (async () => {
-    for await (let event of this.socket.listener('authenticate')) {
-      this.channel.subscribe();
+    while (this.active) {
+      for await (let event of this.socket.listener('authenticate')) {
+        this.channel.subscribe();
+      }
     }
   })();
 }
@@ -273,6 +281,10 @@ AGCollection.prototype.delete = function (id) {
 };
 
 AGCollection.prototype.destroy = function () {
+  if (!this.active) {
+    return;
+  }
+  this.active = false;
   if (this.channel) {
     this.socket.killListener('authenticate');
     this.channel.kill();
