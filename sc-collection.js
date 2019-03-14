@@ -1,9 +1,9 @@
 import jsonStableStringify from '../sc-json-stable-stringify/sc-json-stable-stringify.js';
-import Emitter from '../sc-component-emitter/sc-component-emitter.js';
-import SCModel from '../sc-model/sc-model.js';
+import AsyncStreamEmitter from '../async-stream-emitter/index.js';
+import AGModel from '../ag-model/ag-model.js';
 
-function SCCollection(options) {
-  Emitter.call(this);
+function AGCollection(options) {
+  AsyncStreamEmitter.call(this);
 
   this.socket = options.socket;
   this.type = options.type;
@@ -25,27 +25,18 @@ function SCCollection(options) {
   this.realtimeCollection = options.realtimeCollection == null ? true : options.realtimeCollection;
   this.writeOnly = options.writeOnly;
 
-  this.scModels = {};
+  this.agModel = {};
   this.value = [];
 
   this._triggerCollectionError = (error) => {
-    let err = this._formatError(error);
-    // Throw error in different stack frame so that error handling
-    // cannot interfere with a reconnect action.
-    setTimeout(() => {
-      if (this.listeners('error').length < 1) {
-        throw err;
-      } else {
-        this.emit('error', err);
-      }
-    }, 0);
+    this.emit('error', this._formatError(error));
   };
 
-  this._handleSCModelError = (err) => {
-    this._triggerCollectionError(err);
+  this._handleAGModelError = (error) => {
+    this._triggerCollectionError(error);
   };
 
-  this._handleSCModelChange = (event) => {
+  this._handleAGModelChange = (event) => {
     this.value.forEach((modelValue, index) => {
       if (modelValue.id === event.resourceId) {
         this.value.splice(index, 1, modelValue);
@@ -61,18 +52,17 @@ function SCCollection(options) {
   if (!this.realtimeCollection) {
     // This is to account for socket reconnects - After recovering from a lost connection,
     // we will re-fetch the whole value to make sure that we haven't missed any updates made to it.
-    this.socket.on('connect', (status) => {
-      this.loadData();
-    });
+    (async () => {
+      for await (let event of this.socket.listener('connect')) {
+        this.loadData();
+      }
+    })();
+
     if (this.socket.state == 'open') {
       this.loadData();
     }
     return;
   }
-
-  this._handleChannelData = (packet) => {
-    this.reloadCurrentPage();
-  };
 
   let channelPrefix = 'crud>';
   let viewParamsObject = this.viewParams || {};
@@ -82,8 +72,7 @@ function SCCollection(options) {
     viewPrimaryParams[field] = viewParamsObject[field] === undefined ? null : viewParamsObject[field];
   });
   let viewPrimaryParamsString = jsonStableStringify(viewPrimaryParams);
-  let viewChannelName = channelPrefix + this.view +
-    '(' + viewPrimaryParamsString + '):' + this.type;
+  let viewChannelName = `${channelPrefix}${this.view}(${viewPrimaryParamsString}):${this.type}`;
 
   let subscribeOptions = {
     data: {
@@ -93,35 +82,52 @@ function SCCollection(options) {
 
   this.channel = this.socket.subscribe(viewChannelName, subscribeOptions);
 
-  this._handleAuthentication = () => {
-    this.channel.subscribe();
-  };
+  this._symbol = Symbol();
 
-  this.channel.watch(this._handleChannelData);
+  if (!this.socket.channelWatchers) {
+    this.socket.channelWatchers = {};
+  }
+  if (!this.socket.channelWatchers[this.channel.name]) {
+    this.socket.channelWatchers[this.channel.name] = {};
+  }
+  this.socket.channelWatchers[this.channel.name][this._symbol] = true;
 
-  this._handleSubscription = () => {
-    this.loadData();
-  };
+  (async () => {
+    for await (let data of this.channel) {
+      this.reloadCurrentPage();
+    }
+  })();
 
-  this._handleSubscriptionFailure = (err) => {
-    this._triggerCollectionError(err);
-  };
-
-  // Fetch data once the subscribe is successful.
-  this.channel.on('subscribe', this._handleSubscription);
+  (async () => {
+    for await (let event of this.channel.listener('subscribe')) {
+      // Fetch data when subscribe is successful.
+      this.loadData();
+    }
+  })();
 
   if (this.channel.state === 'subscribed') {
     this.loadData();
   }
-  this.channel.on('subscribeFail', this._handleSubscriptionFailure);
-  this.socket.on('authenticate', this._handleAuthentication);
+
+  (async () => {
+    for await (let {error} of this.channel.listener('subscribeFail')) {
+      this._triggerCollectionError(error);
+    }
+  })();
+
+  // TODO 2: Always rebind while instance is active?
+  (async () => {
+    for await (let event of this.socket.listener('authenticate')) {
+      this.channel.subscribe();
+    }
+  })();
 }
 
-SCCollection.prototype = Object.create(Emitter.prototype);
+AGCollection.prototype = Object.create(AsyncStreamEmitter.prototype);
 
-SCCollection.Emitter = Emitter;
+AGCollection.AsyncStreamEmitter = AsyncStreamEmitter;
 
-SCCollection.prototype._formatError = function (error) {
+AGCollection.prototype._formatError = function (error) {
   if (error) {
     if (error.message) {
       return new Error(error.message);
@@ -132,9 +138,9 @@ SCCollection.prototype._formatError = function (error) {
 };
 
 // Load values for the collection.
-SCCollection.prototype.loadData = function () {
+AGCollection.prototype.loadData = async function () {
   if (this.writeOnly) {
-    this._triggerCollectionError('Cannot load values for an SCCollection declared as write-only');
+    this._triggerCollectionError('Cannot load values for an AGCollection declared as write-only');
     return;
   }
 
@@ -155,77 +161,91 @@ SCCollection.prototype.loadData = function () {
     query.getCount = true;
   }
 
-  this.socket.emit('read', query, (err, result) => {
-    if (err) {
-      this._triggerCollectionError(err);
+  let result;
+  try {
+    result = await this.socket.invoke('read', query);
+  } catch (error) {
+    this._triggerCollectionError(error);
+
+    return;
+  }
+
+  let existingItemsMap = {};
+  let newIdsLookup = {};
+  let currentItems = this.value;
+  let len = currentItems.length;
+
+  for (let h = 0; h < len; h++) {
+    existingItemsMap[currentItems[h].id] = currentItems[h];
+  }
+
+  let oldValue = this.value.splice(0);
+  let resultDataLen = result.data.length;
+
+  for (let i = 0; i < resultDataLen; i++) {
+    let tempId = result.data[i];
+    newIdsLookup[tempId] = true;
+    if (existingItemsMap[tempId] == null) {
+      let model = new AGModel({
+        socket: this.socket,
+        type: this.type,
+        id: tempId,
+        fields: this.fields
+      });
+      this.agModel[tempId] = model;
+      this.value.push(model.value);
+
+      (async () => {
+        for await (let {error} of model.listener('error')) {
+          this._handleAGModelError(error);
+        }
+      })();
+
+      (async () => {
+        for await (let event of model.listener('change')) {
+          this._handleAGModelChange(event);
+        }
+      })();
+
     } else {
-      let existingItemsMap = {};
-      let newIdsLookup = {};
-      let currentItems = this.value;
-      let len = currentItems.length;
+      this.value.push(existingItemsMap[tempId]);
+    }
+  }
 
-      for (let h = 0; h < len; h++) {
-        existingItemsMap[currentItems[h].id] = currentItems[h];
-      }
-
-      let oldValue = this.value.splice(0);
-      let resultDataLen = result.data.length;
-
-      for (let i = 0; i < resultDataLen; i++) {
-        let tempId = result.data[i];
-        newIdsLookup[tempId] = true;
-        if (existingItemsMap[tempId] == null) {
-          let model = new SCModel({
-            socket: this.socket,
-            type: this.type,
-            id: tempId,
-            fields: this.fields
-          });
-          this.scModels[tempId] = model;
-          this.value.push(model.value);
-          model.on('error', this._handleSCModelError);
-          model.on('change', this._handleSCModelChange);
-        } else {
-          this.value.push(existingItemsMap[tempId]);
-        }
-      }
-
-      Object.keys(this.scModels).forEach((resourceId) => {
-        if (!newIdsLookup[resourceId]) {
-          this.scModels[resourceId].destroy();
-          delete this.scModels[resourceId];
-        }
-      });
-
-      if (result.count != null) {
-        this.meta.count = result.count;
-      }
-
-      this.emit('change', {
-        resourceType: this.type,
-        oldValue: oldValue,
-        newValue: this.value
-      });
-
-      this.meta.isLastPage = result.isLastPage;
+  Object.keys(this.agModel).forEach((resourceId) => {
+    if (!newIdsLookup[resourceId]) {
+      this.agModel[resourceId].destroy();
+      delete this.agModel[resourceId];
     }
   });
+
+  if (result.count != null) {
+    this.meta.count = result.count;
+  }
+
+  this.emit('change', {
+    resourceType: this.type,
+    oldValue: oldValue,
+    newValue: this.value
+  });
+
+  this.meta.isLastPage = result.isLastPage;
 };
 
-SCCollection.prototype.reloadCurrentPage = function () {
+AGCollection.prototype.reloadCurrentPage = function () {
   if (!this.writeOnly) {
     this.loadData();
   }
 };
 
-SCCollection.prototype.fetchNextPage = function () {
+AGCollection.prototype.fetchNextPage = function () {
   if (!this.meta.isLastPage) {
     this.meta.pageOffset += this.meta.pageSize;
     this.reloadCurrentPage();
   }
 };
 
-SCCollection.prototype.fetchPreviousPage = function () {
+AGCollection.prototype.fetchPreviousPage = function () {
   if (this.meta.pageOffset > 0) {
     let prevOffset = this.meta.pageOffset - this.meta.pageSize;
     if (prevOffset < 0) {
@@ -236,55 +256,41 @@ SCCollection.prototype.fetchPreviousPage = function () {
   }
 };
 
-SCCollection.prototype.create = function (newValue) {
+AGCollection.prototype.create = async function (newValue) {
   let query = {
     type: this.type,
     value: newValue
   };
-  return new Promise((resolve, reject) => {
-    this.socket.emit('create', query, (err, data) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(data);
-    });
-  });
+  return this.socket.invoke('create', query);
 };
 
-SCCollection.prototype.delete = function (id) {
+AGCollection.prototype.delete = function (id) {
   let query = {
     type: this.type,
     id: id
   };
-  return new Promise((resolve, reject) => {
-    this.socket.emit('delete', query, (err, data) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(data);
-    });
-  });
+  return this.socket.invoke('delete', query);
 };
 
-SCCollection.prototype.destroy = function () {
+AGCollection.prototype.destroy = function () {
   if (this.channel) {
-    this.socket.off('authenticate', this._handleAuthentication);
-    this.channel.off('subscribe', this._handleSubscription);
-    this.channel.off('subscribeFail', this._handleSubscriptionFailure);
+    this.socket.killListener('authenticate');
+    this.channel.kill();
 
-    this.channel.unwatch(this._handleChannelData);
-
-    if (!this.channel.watchers().length) {
-      this.channel.destroy();
+    let watchers = this.socket.channelWatchers[this.channel.name];
+    if (watchers) {
+      delete watchers[this._symbol];
+    }
+    if (!Object.getOwnPropertySymbols(watchers || {}).length) {
+      delete this.socket.channelWatchers[this.channel.name];
+      this.channel.unsubscribe();
     }
   }
-  Object.values(this.scModels).forEach((scModel) => {
-    scModel.removeListener('error', this._handleSCModelError);
-    scModel.removeListener('change', this._handleSCModelChange);
-    scModel.destroy();
+  Object.values(this.agModel).forEach((agModel) => {
+    agModel.killListener('error');
+    agModel.killListener('change');
+    agModel.destroy();
   });
 };
 
-export default SCCollection;
+export default AGCollection;

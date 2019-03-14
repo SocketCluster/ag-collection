@@ -2,11 +2,11 @@
   "name": "ag-collection",
   "version": "0.9.0",
   "description": "SocketCluster collection component for the front end",
-  "main": "sc-collection.js",
+  "main": "ag-collection.js",
   "dependencies": {
-    "sc-component-emitter": "^1.2.1",
+    "async-stream-emitter": "^3.0.2",
     "sc-json-stable-stringify": "^2.0.0",
-    "sc-model": "^1.1.6"
+    "ag-model": "^1.1.6"
   },
   "devDependencies": {},
   "scripts": {
@@ -14,17 +14,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/SocketCluster/sc-collection.git"
+    "url": "git://github.com/SocketCluster/ag-collection.git"
   },
   "keywords": [
-    "socketcluster",
+    "asyngular",
     "realtime",
     "collection"
   ],
   "author": "Jonathan Gros-Dubois",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/SocketCluster/sc-collection/issues"
+    "url": "https://github.com/SocketCluster/ag-collection/issues"
   },
-  "homepage": "https://github.com/SocketCluster/sc-collection#readme"
+  "homepage": "https://github.com/SocketCluster/ag-collection#readme"
 }

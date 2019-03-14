@@ -1,28 +1,28 @@
-# SCCollection
+# AGCollection
 SocketCluster real-time collection component for reactive front ends.
-Designed to work with `sc-crud-rethink` https://github.com/SocketCluster/sc-crud-rethink
+Designed to work with `ag-crud-rethink` https://github.com/SocketCluster/ag-crud-rethink
 
 ## Setup
 
 Inside the directory from which front end files are served, run the command:
 
 ```bash
-npm install sc-collection --save
+npm install ag-collection --save
 ```
 
 You can import it in your scripts like this (example; your exact path may differ):
 ```js
-import SCCollection from '/node_modules/sc-collection/sc-collection.js';
+import AGCollection from '/node_modules/ag-collection/ag-collection.js';
 ```
 
 ## Usage
 
-See https://github.com/socketcluster/sc-sample-inventory for sample app which demonstrates this component in action.
+See https://github.com/socketcluster/ag-sample-inventory for sample app which demonstrates this component in action.
 
-An SCCollection object can be instantiated like this:
+An AGCollection object can be instantiated like this:
 
 ```js
-this.productsCollection = new SCCollection({
+this.productsCollection = new AGCollection({
   // Pass the SocketCluster socket object.
   socket: pageOptions.socket,
   type: 'Product',
@@ -35,7 +35,7 @@ this.productsCollection = new SCCollection({
 });
 ```
 
-The SCCollection allows you to read and manipulate a collection of documents in RethinkDB from the front end.
+The AGCollection allows you to read and manipulate a collection of documents in RethinkDB from the front end.
 The ```productsCollection.value``` property is an array of `Product` objects which make up this collection; this array updates in real-time to match the collection on the server.
 The ```productsCollection.meta``` property is an object which holds metadata about the collection's current state. It has the following properties: ```pageOffset```, ```pageSize```, ```isLastPage``` and ```count```.
 
@@ -44,7 +44,7 @@ In VueJS, you can instantiate and attach the collection value and metadata to yo
 
 ```js
 data: function () {
-  this.productsCollection = new SCCollection({
+  this.productsCollection = new AGCollection({
     socket: pageOptions.socket,
     type: 'Product',
     fields: ['name', 'qty', 'price'],
@@ -75,14 +75,14 @@ Then you can bind this data to your template like this:
 
 ## Supported attributes
 
-The SCCollection tag supports the following attributes:
+The AGCollection tag supports the following attributes:
 
-- ```socket```: A ```socketcluster-client``` socket; note that the same global socket object can be shared between multiple SCCollection and SCModel instances.
+- ```socket```: A ```socketcluster-client``` socket; note that the same global socket object can be shared between multiple AGCollection and AGModel instances.
 - ```type```: This is the model/table name in RethinkDB.
 - ```fields```: The document fields to load for this collection.
-- ```view```: The view to use for this collection. See https://github.com/SocketCluster/sc-crud-rethink for details about views.
+- ```view```: The view to use for this collection. See https://github.com/SocketCluster/ag-crud-rethink for details about views.
 - ```viewParams```: This should be a JSON object which will be used for filtering results for your view.
-If you are using the sc-crud-rethink plugin on the backend, this data will be passed as the third argument to your transform function on your schema.
+If you are using the ag-crud-rethink plugin on the backend, this data will be passed as the third argument to your transform function on your schema.
 - ```pageOffset```: An integer which represents the current page of results within the collection.
 - ```pageSize```: The number of results per page.
 - ```getCount```: This is ```false``` by default; if set to ```true```, the ```collection.meta.count``` property will be populated with the total number of items in the collection; otherwise it always stays null (performance is better if ```getCount``` is ```false```).
