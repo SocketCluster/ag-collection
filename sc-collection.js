@@ -29,6 +29,10 @@ function AGCollection(options) {
   this.agModel = {};
   this.value = [];
 
+  this._channelOutputConsumerIds = [];
+  this._channelListenerConsumerIds = [];
+  this._socketConsumerIds = [];
+
   this._triggerCollectionError = (error) => {
     this.emit('error', this._formatError(error));
   };
@@ -54,8 +58,15 @@ function AGCollection(options) {
     // This is to account for socket reconnects - After recovering from a lost connection,
     // we will re-fetch the whole value to make sure that we haven't missed any updates made to it.
     (async () => {
-      while (this.active) {
-        for await (let event of this.socket.listener('connect')) {
+      let consumer = this.socket.listener('connect').createConsumer();
+      this._socketConsumerIds.push(consumer.id);
+      while (true) {
+        let packet = await consumer.next();
+        if (packet.done) {
+          if (!this.active) {
+            break;
+          }
+        } else {
           this.loadData();
         }
       }
@@ -96,14 +107,30 @@ function AGCollection(options) {
   this.socket.channelWatchers[this.channel.name][this._symbol] = true;
 
   (async () => {
-    for await (let data of this.channel) {
-      this.reloadCurrentPage();
+    let consumer = this.channel.createConsumer();
+    this._channelOutputConsumerIds.push(consumer.id);
+    while (true) {
+      let packet = await consumer.next();
+      if (packet.done) {
+        if (!this.active) {
+          break;
+        }
+      } else {
+        this.reloadCurrentPage();
+      }
     }
   })();
 
   (async () => {
-    while (this.active) {
-      for await (let event of this.channel.listener('subscribe')) {
+    let consumer = this.channel.listener('subscribe').createConsumer();
+    this._channelListenerConsumerIds.push(consumer.id);
+    while (true) {
+      let packet = await consumer.next();
+      if (packet.done) {
+        if (!this.active) {
+          break;
+        }
+      } else {
         // Fetch data when subscribe is successful.
         this.loadData();
       }
@@ -115,16 +142,30 @@ function AGCollection(options) {
   }
 
   (async () => {
-    while (this.active) {
-      for await (let {error} of this.channel.listener('subscribeFail')) {
-        this._triggerCollectionError(error);
+    let consumer = this.channel.listener('subscribeFail').createConsumer();
+    this._channelListenerConsumerIds.push(consumer.id);
+    while (true) {
+      let packet = await consumer.next();
+      if (packet.done) {
+        if (!this.active) {
+          break;
+        }
+      } else {
+        this._triggerCollectionError(packet.value.error);
       }
     }
   })();
 
   (async () => {
-    while (this.active) {
-      for await (let event of this.socket.listener('authenticate')) {
+    let consumer = this.socket.listener('authenticate').createConsumer();
+    this._socketConsumerIds.push(consumer.id);
+    while (true) {
+      let packet = await consumer.next();
+      if (packet.done) {
+        if (!this.active) {
+          break;
+        }
+      } else {
         this.channel.subscribe();
       }
     }
@@ -285,9 +326,17 @@ AGCollection.prototype.destroy = function () {
     return;
   }
   this.active = false;
+
+  this._socketConsumerIds.forEach((consumerId) => {
+    this.socket.killListenerConsumer(consumerId);
+  });
   if (this.channel) {
-    this.socket.killListener('authenticate');
-    this.channel.kill();
+    this._channelOutputConsumerIds.forEach((consumerId) => {
+      this.channel.killOutputConsumer(consumerId);
+    });
+    this._channelListenerConsumerIds.forEach((consumerId) => {
+      this.channel.killListenerConsumer(consumerId);
+    });
 
     let watchers = this.socket.channelWatchers[this.channel.name];
     if (watchers) {
