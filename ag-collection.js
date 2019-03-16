@@ -31,7 +31,7 @@ function AGCollection(options) {
 
   this._channelOutputConsumerIds = [];
   this._channelListenerConsumerIds = [];
-  this._socketConsumerIds = [];
+  this._socketListenerConsumerIds = [];
 
   this._triggerCollectionError = (error) => {
     this.emit('error', this._formatError(error));
@@ -59,7 +59,7 @@ function AGCollection(options) {
     // we will re-fetch the whole value to make sure that we haven't missed any updates made to it.
     (async () => {
       let consumer = this.socket.listener('connect').createConsumer();
-      this._socketConsumerIds.push(consumer.id);
+      this._socketListenerConsumerIds.push(consumer.id);
       while (true) {
         let packet = await consumer.next();
         if (packet.done) {
@@ -158,7 +158,7 @@ function AGCollection(options) {
 
   (async () => {
     let consumer = this.socket.listener('authenticate').createConsumer();
-    this._socketConsumerIds.push(consumer.id);
+    this._socketListenerConsumerIds.push(consumer.id);
     while (true) {
       let packet = await consumer.next();
       if (packet.done) {
@@ -327,7 +327,7 @@ AGCollection.prototype.destroy = function () {
   }
   this.active = false;
 
-  this._socketConsumerIds.forEach((consumerId) => {
+  this._socketListenerConsumerIds.forEach((consumerId) => {
     this.socket.killListenerConsumer(consumerId);
   });
   if (this.channel) {
