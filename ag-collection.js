@@ -1,5 +1,5 @@
 import jsonStableStringify from '../sc-json-stable-stringify/sc-json-stable-stringify.js';
-import AsyncStreamEmitter from '../async-stream-emitter/index.js';
+import AsyncStreamEmitter from '../async-stream-emitter/async-stream-emitter.js';
 import AGModel from '../ag-model/ag-model.js';
 
 function AGCollection(options) {
