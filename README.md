@@ -1,5 +1,5 @@
 # AGCollection
-SocketCluster real-time collection component for reactive front ends.
+Asyngular real-time collection component for reactive front ends.
 Designed to work with `ag-crud-rethink` https://github.com/SocketCluster/ag-crud-rethink
 
 ## Setup
@@ -23,7 +23,7 @@ An AGCollection object can be instantiated like this:
 
 ```js
 this.productsCollection = new AGCollection({
-  // Pass the SocketCluster socket object.
+  // Pass the Asyngular socket object.
   socket: pageOptions.socket,
   type: 'Product',
   fields: ['name', 'qty', 'price'],
@@ -77,7 +77,7 @@ Then you can bind this data to your template like this:
 
 The AGCollection tag supports the following attributes:
 
-- ```socket```: A ```socketcluster-client``` socket; note that the same global socket object can be shared between multiple AGCollection and AGModel instances.
+- ```socket```: A ```asyngular-client``` socket; note that the same global socket object can be shared between multiple AGCollection and AGModel instances.
 - ```type```: This is the model/table name in RethinkDB.
 - ```fields```: The document fields to load for this collection.
 - ```view```: The view to use for this collection. See https://github.com/SocketCluster/ag-crud-rethink for details about views.
