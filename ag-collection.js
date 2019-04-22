@@ -9,6 +9,7 @@ function AGCollection(options) {
   this.socket = options.socket;
   this.type = options.type;
   this.fields = options.fields;
+  this.defaultFieldValues = options.defaultFieldValues;
   this.view = options.view;
   this.viewParams = options.viewParams;
   if (options.viewPrimaryKeys == null) {
@@ -241,7 +242,8 @@ AGCollection.prototype.loadData = async function () {
         socket: this.socket,
         type: this.type,
         id: tempId,
-        fields: this.fields
+        fields: this.fields,
+        defaultFieldValues: this.defaultFieldValues
       });
       createdModels.push(model);
       this.agModels[tempId] = model;
