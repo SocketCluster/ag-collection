@@ -26,7 +26,7 @@ function AGCollection(options) {
   this.realtimeCollection = options.realtimeCollection == null ? true : options.realtimeCollection;
   this.writeOnly = options.writeOnly;
 
-  this.agModel = {};
+  this.agModels = {};
   this.value = [];
 
   this._channelOutputConsumerIds = [];
@@ -244,7 +244,7 @@ AGCollection.prototype.loadData = async function () {
         fields: this.fields
       });
       createdModels.push(model);
-      this.agModel[tempId] = model;
+      this.agModels[tempId] = model;
       this.value.push(model.value);
 
       (async () => {
@@ -266,11 +266,11 @@ AGCollection.prototype.loadData = async function () {
 
   let deletedModels = [];
 
-  Object.keys(this.agModel).forEach((resourceId) => {
+  Object.keys(this.agModels).forEach((resourceId) => {
     if (!newIdsLookup[resourceId]) {
-      let model = this.agModel[resourceId];
+      let model = this.agModels[resourceId];
       model.destroy();
-      delete this.agModel[resourceId];
+      delete this.agModels[resourceId];
       deletedModels.push(model);
     }
   });
@@ -356,10 +356,10 @@ AGCollection.prototype.destroy = function () {
       this.channel.unsubscribe();
     }
   }
-  Object.values(this.agModel).forEach((agModel) => {
-    agModel.killListener('error');
-    agModel.killListener('change');
-    agModel.destroy();
+  Object.values(this.agModels).forEach((agModels) => {
+    agModels.killListener('error');
+    agModels.killListener('change');
+    agModels.destroy();
   });
 };
 
