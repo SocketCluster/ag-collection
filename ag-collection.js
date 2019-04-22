@@ -261,10 +261,13 @@ AGCollection.prototype.loadData = async function () {
     }
   }
 
+  let deletedIds = [];
+
   Object.keys(this.agModel).forEach((resourceId) => {
     if (!newIdsLookup[resourceId]) {
       this.agModel[resourceId].destroy();
       delete this.agModel[resourceId];
+      deletedIds.push(resourceId);
     }
   });
 
@@ -274,8 +277,9 @@ AGCollection.prototype.loadData = async function () {
 
   this.emit('change', {
     resourceType: this.type,
-    oldValue: oldValue,
-    newValue: this.value
+    oldValue,
+    newValue: this.value,
+    deletedIds
   });
 
   this.meta.isLastPage = result.isLastPage;
