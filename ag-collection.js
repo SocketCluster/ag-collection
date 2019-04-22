@@ -231,6 +231,8 @@ AGCollection.prototype.loadData = async function () {
   let oldValue = this.value.splice(0);
   let resultDataLen = result.data.length;
 
+  let createdModels = [];
+
   for (let i = 0; i < resultDataLen; i++) {
     let tempId = result.data[i];
     newIdsLookup[tempId] = true;
@@ -241,6 +243,7 @@ AGCollection.prototype.loadData = async function () {
         id: tempId,
         fields: this.fields
       });
+      createdModels.push(model);
       this.agModel[tempId] = model;
       this.value.push(model.value);
 
@@ -261,13 +264,14 @@ AGCollection.prototype.loadData = async function () {
     }
   }
 
-  let deletedIds = [];
+  let deletedModels = [];
 
   Object.keys(this.agModel).forEach((resourceId) => {
     if (!newIdsLookup[resourceId]) {
-      this.agModel[resourceId].destroy();
+      let model = this.agModel[resourceId];
+      model.destroy();
       delete this.agModel[resourceId];
-      deletedIds.push(resourceId);
+      deletedModels.push(model);
     }
   });
 
@@ -279,7 +283,8 @@ AGCollection.prototype.loadData = async function () {
     resourceType: this.type,
     oldValue,
     newValue: this.value,
-    deletedIds
+    createdModels,
+    deletedModels
   });
 
   this.meta.isLastPage = result.isLastPage;
