@@ -274,6 +274,7 @@ AGCollection.prototype.loadData = async function () {
       model.destroy();
       delete this.agModels[resourceId];
       deletedModels.push(model);
+      this.emit('modelDestroy', model);
     }
   });
 
@@ -358,10 +359,11 @@ AGCollection.prototype.destroy = function () {
       this.channel.unsubscribe();
     }
   }
-  Object.values(this.agModels).forEach((agModels) => {
-    agModels.killListener('error');
-    agModels.killListener('change');
-    agModels.destroy();
+  Object.values(this.agModels).forEach((model) => {
+    model.killListener('error');
+    model.killListener('change');
+    model.destroy();
+    this.emit('modelDestroy', model);
   });
 };
 
