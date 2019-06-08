@@ -26,6 +26,7 @@ function AGCollection(options) {
   this.getCount = options.getCount;
   this.realtimeCollection = options.realtimeCollection == null ? true : options.realtimeCollection;
   this.writeOnly = options.writeOnly;
+  this.changeReloadDelay = options.changeReloadDelay == null ? 500 : options.changeReloadDelay;
 
   this.agModels = {};
   this.value = [];
@@ -107,6 +108,8 @@ function AGCollection(options) {
   }
   this.socket.channelWatchers[this.channel.name][this._symbol] = true;
 
+  this._reloadTimeoutId = null;
+
   (async () => {
     let consumer = this.channel.createConsumer();
     this._channelOutputConsumerIds.push(consumer.id);
@@ -114,10 +117,22 @@ function AGCollection(options) {
       let packet = await consumer.next();
       if (packet.done) {
         if (!this.active) {
+          if (this._reloadTimeoutId != null) {
+            clearTimeout(this._reloadTimeoutId);
+          }
           break;
         }
       } else {
-        this.reloadCurrentPage();
+        (async () => {
+          if (this._reloadTimeoutId != null) {
+            return;
+          }
+          let {timeoutId, promise} = this._wait(this.changeReloadDelay)
+          this._reloadTimeoutId = timeoutId;
+          await promise;
+          this._reloadTimeoutId = null;
+          this.reloadCurrentPage();
+        })();
       }
     }
   })();
@@ -185,6 +200,14 @@ AGCollection.prototype._formatError = function (error) {
     return new Error(error);
   }
   return error;
+};
+
+AGCollection.prototype._wait = function (timeout) {
+  let timeoutId;
+  let promise = new Promise((resolve) => {
+    timeoutId = setTimeout(resolve, timeout);
+  });
+  return {timeoutId, promise};
 };
 
 // Load values for the collection.
