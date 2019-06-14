@@ -335,6 +335,8 @@ AGCollection.prototype.fetchPreviousPage = function () {
     if (prevOffset < 0) {
       prevOffset = 0;
     }
+    // This is needed to avoid flickering due to network latency.
+    this.meta.isLastPage = false;
     this.meta.pageOffset = prevOffset;
     this.reloadCurrentPage();
   }
