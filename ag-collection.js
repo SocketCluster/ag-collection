@@ -36,7 +36,7 @@ function AGCollection(options) {
   this._socketListenerConsumerIds = [];
 
   this._triggerCollectionError = (error) => {
-    this.emit('error', this._formatError(error));
+    this.emit('error', {error: this._formatError(error)});
   };
 
   this._handleAGModelError = (error) => {
