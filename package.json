@@ -1,6 +1,6 @@
 {
   "name": "ag-collection",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Asyngular collection component for the front end",
   "main": "ag-collection.js",
   "dependencies": {
