@@ -27,6 +27,7 @@ function AGCollection(options) {
   this.realtimeCollection = options.realtimeCollection == null ? true : options.realtimeCollection;
   this.writeOnly = options.writeOnly;
   this.changeReloadDelay = options.changeReloadDelay == null ? 500 : options.changeReloadDelay;
+  this.passiveMode = options.passiveMode || false;
 
   this.agModels = {};
   this.value = [];
@@ -266,7 +267,8 @@ AGCollection.prototype.loadData = async function () {
         type: this.type,
         id: tempId,
         fields: this.fields,
-        defaultFieldValues: this.defaultFieldValues
+        defaultFieldValues: this.defaultFieldValues,
+        passiveMode: this.passiveMode
       });
       createdModels.push(model);
       this.agModels[tempId] = model;
