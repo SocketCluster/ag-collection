@@ -1,12 +1,12 @@
 {
   "name": "ag-collection",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Asyngular collection component for the front end",
   "main": "ag-collection.js",
   "dependencies": {
     "async-stream-emitter": "^3.0.3",
     "sc-json-stable-stringify": "^2.0.0",
-    "ag-model": "^1.1.1"
+    "ag-model": "^1.1.2"
   },
   "devDependencies": {},
   "scripts": {
