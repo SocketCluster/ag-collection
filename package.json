@@ -1,7 +1,7 @@
 {
   "name": "ag-collection",
   "version": "1.4.5",
-  "description": "Asyngular collection component for the front end",
+  "description": "SocketCluster collection component for the front end",
   "main": "ag-collection.js",
   "dependencies": {
     "async-stream-emitter": "^3.0.3",
@@ -17,7 +17,7 @@
     "url": "git://github.com/SocketCluster/ag-collection.git"
   },
   "keywords": [
-    "asyngular",
+    "socketcluster",
     "realtime",
     "collection"
   ],
