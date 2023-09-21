@@ -51,6 +51,7 @@ function AGCollection(options) {
       }
     });
     this.emit('modelChange', event);
+    this.emit('change', event);
   };
 
   if (this.writeOnly) {
@@ -128,7 +129,18 @@ function AGCollection(options) {
           if (this._reloadTimeoutId != null) {
             return;
           }
-          let {timeoutId, promise} = this._wait(this.changeReloadDelay)
+          if (
+            packet.value &&
+            packet.value.type === 'delete' &&
+            packet.value.value &&
+            packet.value.value.id &&
+            this.agModels[packet.value.value.id]
+          ) {
+            // Do not allow a model to update itself while the collection
+            // is in the middle of refreshing itself to delete it.
+            this.agModels[packet.value.value.id].destroy();
+          }
+          let {timeoutId, promise} = this._wait(this.changeReloadDelay);
           this._reloadTimeoutId = timeoutId;
           await promise;
           this._reloadTimeoutId = null;
@@ -307,13 +319,16 @@ AGCollection.prototype.loadData = async function () {
     this.meta.count = result.count;
   }
 
-  this.emit('change', {
+  let event = {
     resourceType: this.type,
     oldValue,
     newValue: this.value,
     createdModels,
     deletedModels
-  });
+  };
+
+  this.emit('collectionChange', event);
+  this.emit('change', event);
 
   this.meta.isLastPage = result.isLastPage;
 };
