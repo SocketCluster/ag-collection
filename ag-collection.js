@@ -331,7 +331,8 @@ AGCollection.prototype.loadData = async function () {
     oldValue,
     newValue: this.value,
     createdModels,
-    deletedModels
+    deletedModels,
+    isRemote: true
   };
 
   this.emit('collectionChange', event);
