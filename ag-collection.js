@@ -29,7 +29,7 @@ function AGCollection(options) {
   this.changeReloadDelay = options.changeReloadDelay == null ? 500 : options.changeReloadDelay;
   this.passiveMode = options.passiveMode || false;
 
-  this.models = {};
+  this.agModels = {};
   this.value = [];
 
   this._channelOutputConsumerIds = [];
@@ -134,11 +134,11 @@ function AGCollection(options) {
             packet.value.type === 'delete' &&
             packet.value.value &&
             packet.value.value.id &&
-            this.models[packet.value.value.id]
+            this.agModels[packet.value.value.id]
           ) {
             // Do not allow a model to update itself while the collection
             // is in the middle of refreshing itself to delete it.
-            this.models[packet.value.value.id].destroy();
+            this.agModels[packet.value.value.id].destroy();
           }
           let {timeoutId, promise} = this._wait(this.changeReloadDelay);
           this._reloadTimeoutId = timeoutId;
@@ -283,7 +283,7 @@ AGCollection.prototype.loadData = async function () {
         passiveMode: this.passiveMode
       });
       createdModels.push(model);
-      this.models[tempId] = model;
+      this.agModels[tempId] = model;
       this.value.push(model.value);
 
       (async () => {
@@ -305,11 +305,11 @@ AGCollection.prototype.loadData = async function () {
 
   let deletedModels = [];
 
-  Object.keys(this.models).forEach((resourceId) => {
+  Object.keys(this.agModels).forEach((resourceId) => {
     if (!newIdsLookup[resourceId]) {
-      let model = this.models[resourceId];
+      let model = this.agModels[resourceId];
       model.destroy();
-      delete this.models[resourceId];
+      delete this.agModels[resourceId];
       deletedModels.push(model);
       this.emit('modelDestroy', model);
     }
@@ -401,7 +401,7 @@ AGCollection.prototype.destroy = function () {
       this.channel.unsubscribe();
     }
   }
-  Object.values(this.models).forEach((model) => {
+  Object.values(this.agModels).forEach((model) => {
     model.killListener('error');
     model.killListener('change');
     model.destroy();
