@@ -1,5 +1,5 @@
 import jsonStableStringify from '../sc-json-stable-stringify/sc-json-stable-stringify.js';
-import AsyncStreamEmitter from '../async-stream-emitter/async-stream-emitter.js';
+import AsyncStreamEmitter from '../async-stream-emitter/async-stream-emitter.min.js';
 import AGModel from '../ag-model/ag-model.js';
 
 function AGCollection(options) {
@@ -319,6 +319,13 @@ AGCollection.prototype.loadData = async function () {
     this.meta.count = result.count;
   }
 
+  this.meta.isLastPage = result.isLastPage;
+
+  let oldStateString = oldValue.map(resource => resource.id).join(',');
+  let currentStateString = this.value.map(resource => resource.id).join(',');
+
+  if (oldStateString === currentStateString) return;
+
   let event = {
     resourceType: this.type,
     oldValue,
@@ -329,8 +336,6 @@ AGCollection.prototype.loadData = async function () {
 
   this.emit('collectionChange', event);
   this.emit('change', event);
-
-  this.meta.isLastPage = result.isLastPage;
 };
 
 AGCollection.prototype.reloadCurrentPage = function () {
