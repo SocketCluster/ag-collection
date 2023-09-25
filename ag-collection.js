@@ -382,6 +382,7 @@ AGCollection.prototype.delete = function (id) {
 };
 
 AGCollection.prototype.destroy = function () {
+  this.killAllListeners();
   if (!this.active) {
     return;
   }
@@ -408,8 +409,6 @@ AGCollection.prototype.destroy = function () {
     }
   }
   Object.values(this.agModels).forEach((model) => {
-    model.killListener('error');
-    model.killListener('change');
     model.destroy();
     this.emit('modelDestroy', model);
   });
