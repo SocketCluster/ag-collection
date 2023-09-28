@@ -8,7 +8,9 @@ function AGCollection(options) {
   this.active = true;
   this.socket = options.socket;
   this.type = options.type;
-  this.fields = options.fields;
+  this.fields = options.fields || [];
+  this.isStructureReady = false;
+  this.isReady = false;
   this.defaultFieldValues = options.defaultFieldValues;
   this.view = options.view;
   this.viewParams = options.viewParams;
@@ -50,6 +52,13 @@ function AGCollection(options) {
         this.value.splice(index, 1, modelValue);
       }
     });
+    if (this.isStructureReady && !this.isReady) {
+      this.isReady = Object.values(this.agModels).every(model => model.isReady);
+      if (this.isReady) {
+        this.emit('ready', {});
+      }
+    }
+
     this.emit('modelChange', event);
     this.emit('change', event);
   };
@@ -325,6 +334,8 @@ AGCollection.prototype.loadData = async function () {
   let currentStateString = this.value.map(resource => resource.id).join(',');
 
   if (oldStateString === currentStateString) return;
+
+  this.isStructureReady = true;
 
   let event = {
     resourceType: this.type,
