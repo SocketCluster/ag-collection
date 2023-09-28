@@ -9,8 +9,8 @@ function AGCollection(options) {
   this.socket = options.socket;
   this.type = options.type;
   this.fields = options.fields || [];
-  this.isStructureReady = false;
-  this.isReady = false;
+  this.isStructureLoaded = false;
+  this.isLoaded = false;
   this.defaultFieldValues = options.defaultFieldValues;
   this.view = options.view;
   this.viewParams = options.viewParams;
@@ -46,18 +46,23 @@ function AGCollection(options) {
     this._triggerCollectionError(error);
   };
 
+  this._updateModelIsLoaded = () => {
+    if (this.isStructureLoaded && !this.isLoaded) {
+      this.isLoaded = Object.values(this.agModels).every(model => model.isLoaded);
+      if (this.isLoaded) {
+        this.emit('load', {});
+      }
+    }
+  };
+
   this._handleAGModelChange = (event) => {
     this.value.forEach((modelValue, index) => {
       if (modelValue.id === event.resourceId) {
         this.value.splice(index, 1, modelValue);
       }
     });
-    if (this.isStructureReady && !this.isReady) {
-      this.isReady = Object.values(this.agModels).every(model => model.isReady);
-      if (this.isReady) {
-        this.emit('ready', {});
-      }
-    }
+
+    this._updateModelIsLoaded();
 
     this.emit('modelChange', event);
     this.emit('change', event);
@@ -148,6 +153,7 @@ function AGCollection(options) {
             // Do not allow a model to update itself while the collection
             // is in the middle of refreshing itself to delete it.
             this.agModels[packet.value.value.id].destroy();
+            delete this.agModels[packet.value.value.id];
           }
           let {timeoutId, promise} = this._wait(this.changeReloadDelay);
           this._reloadTimeoutId = timeoutId;
@@ -238,6 +244,8 @@ AGCollection.prototype.loadData = async function () {
     this._triggerCollectionError('Cannot load values for an AGCollection declared as write-only');
     return;
   }
+  this.isStructureLoaded = false;
+  this.isLoaded = false;
 
   let query = {
     type: this.type
@@ -333,9 +341,10 @@ AGCollection.prototype.loadData = async function () {
   let oldStateString = oldValue.map(resource => resource.id).join(',');
   let currentStateString = this.value.map(resource => resource.id).join(',');
 
-  if (oldStateString === currentStateString) return;
+  this.isStructureLoaded = true;
+  this._updateModelIsLoaded();
 
-  this.isStructureReady = true;
+  if (oldStateString === currentStateString) return;
 
   let event = {
     resourceType: this.type,
