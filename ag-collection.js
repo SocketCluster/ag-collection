@@ -72,7 +72,7 @@ function AGCollection(options) {
     return;
   }
 
-  if (!this.realtimeCollection) {
+  if (this.realtimeCollection) {
     // This is to account for socket reconnects - After recovering from a lost connection,
     // we will re-fetch the whole value to make sure that we haven't missed any updates made to it.
     (async () => {
