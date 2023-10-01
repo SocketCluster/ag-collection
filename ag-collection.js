@@ -72,9 +72,10 @@ function AGCollection(options) {
     return;
   }
 
-  if (this.realtimeCollection) {
+  if (!this.realtimeCollection) {
     // This is to account for socket reconnects - After recovering from a lost connection,
     // we will re-fetch the whole value to make sure that we haven't missed any updates made to it.
+    // This is not necessary for a realtime collection because it relies on subscribe events instead.
     (async () => {
       let consumer = this.socket.listener('connect').createConsumer();
       this._socketListenerConsumerIds.push(consumer.id);
