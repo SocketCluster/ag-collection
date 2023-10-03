@@ -9,7 +9,6 @@ function AGCollection(options) {
   this.socket = options.socket;
   this.type = options.type;
   this.fields = options.fields || [];
-  this.isStructureLoaded = false;
   this.isLoaded = false;
   this.defaultFieldValues = options.defaultFieldValues;
   this.view = options.view;
@@ -28,7 +27,7 @@ function AGCollection(options) {
   this.getCount = options.getCount;
   this.realtimeCollection = options.realtimeCollection == null ? true : options.realtimeCollection;
   this.writeOnly = options.writeOnly;
-  this.changeReloadDelay = options.changeReloadDelay == null ? 500 : options.changeReloadDelay;
+  this.changeReloadDelay = options.changeReloadDelay == null ? 300 : options.changeReloadDelay;
   this.passiveMode = options.passiveMode || false;
 
   this.agModels = {};
@@ -47,7 +46,7 @@ function AGCollection(options) {
   };
 
   this._updateModelIsLoaded = () => {
-    if (this.isStructureLoaded && !this.isLoaded) {
+    if (!this.isLoaded) {
       this.isLoaded = Object.values(this.agModels).every(model => model.isLoaded);
       if (this.isLoaded) {
         this.emit('load', {});
@@ -245,7 +244,6 @@ AGCollection.prototype.loadData = async function () {
     this._triggerCollectionError('Cannot load values for an AGCollection declared as write-only');
     return;
   }
-  this.isStructureLoaded = false;
   this.isLoaded = false;
 
   let query = {
@@ -342,7 +340,6 @@ AGCollection.prototype.loadData = async function () {
   let oldStateString = oldValue.map(resource => resource.id).join(',');
   let currentStateString = this.value.map(resource => resource.id).join(',');
 
-  this.isStructureLoaded = true;
   this._updateModelIsLoaded();
 
   if (oldStateString === currentStateString) return;
