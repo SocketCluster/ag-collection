@@ -61,8 +61,6 @@ function AGCollection(options) {
       }
     });
 
-    this._updateModelIsLoaded();
-
     this.emit('modelChange', event);
     this.emit('change', event);
   };
@@ -140,9 +138,6 @@ function AGCollection(options) {
         }
       } else {
         (async () => {
-          if (this._reloadTimeoutId != null) {
-            return;
-          }
           if (
             packet.value &&
             packet.value.type === 'delete' &&
@@ -154,6 +149,10 @@ function AGCollection(options) {
             // is in the middle of refreshing itself to delete it.
             this.agModels[packet.value.value.id].destroy();
             delete this.agModels[packet.value.value.id];
+          }
+          this.isLoaded = false;
+          if (this._reloadTimeoutId != null) {
+            return;
           }
           let {timeoutId, promise} = this._wait(this.changeReloadDelay);
           this._reloadTimeoutId = timeoutId;
@@ -305,6 +304,12 @@ AGCollection.prototype.loadData = async function () {
       (async () => {
         for await (let {error} of model.listener('error')) {
           this._handleAGModelError(error);
+        }
+      })();
+
+      (async () => {
+        for await (let event of model.listener('load')) {
+          this._updateModelIsLoaded();
         }
       })();
 
