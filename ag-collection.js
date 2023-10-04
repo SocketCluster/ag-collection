@@ -61,6 +61,8 @@ function AGCollection(options) {
       }
     });
 
+    this._updateModelIsLoaded();
+
     this.emit('modelChange', event);
     this.emit('change', event);
   };
