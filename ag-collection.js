@@ -13,10 +13,10 @@ function AGCollection(options) {
   this.defaultFieldValues = options.defaultFieldValues;
   this.view = options.view;
   this.viewParams = options.viewParams;
-  if (options.viewPrimaryKeys == null) {
-    this.viewPrimaryKeys = Object.keys(options.viewParams || {});
+  if (options.viewPrimaryFields == null) {
+    this.viewPrimaryFields = Object.keys(options.viewParams || {});
   } else {
-    this.viewPrimaryKeys = options.viewPrimaryKeys;
+    this.viewPrimaryFields = options.viewPrimaryFields;
   }
   this.meta = {
     pageOffset: options.pageOffset || 0,
@@ -100,7 +100,7 @@ function AGCollection(options) {
   let viewParamsObject = this.viewParams || {};
   let viewPrimaryParams = {};
 
-  this.viewPrimaryKeys.forEach(function (field) {
+  this.viewPrimaryFields.forEach(function (field) {
     viewPrimaryParams[field] = viewParamsObject[field] === undefined ? null : viewParamsObject[field];
   });
   let viewPrimaryParamsString = jsonStableStringify(viewPrimaryParams);
