@@ -398,11 +398,23 @@ AGCollection.prototype.create = async function (newValue) {
   return this.socket.invoke('create', query);
 };
 
-AGCollection.prototype.delete = function (id) {
+AGCollection.prototype.update = function (id, newValue) {
+  let query = {
+    type: this.type,
+    id: id,
+    value: newValue
+  };
+  return this.socket.invoke('update', query);
+};
+
+AGCollection.prototype.delete = function (id, field) {
   let query = {
     type: this.type,
     id: id
   };
+  if (field != null) {
+    query.field = field;
+  }
   return this.socket.invoke('delete', query);
 };
 
