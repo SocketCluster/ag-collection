@@ -390,6 +390,14 @@ AGCollection.prototype.fetchPreviousPage = function () {
   }
 };
 
+AGCollection.prototype.fetchPage = function (offset) {
+  if (offset < 0) {
+    offset = 0;
+  }
+  this.meta.pageOffset = offset;
+  this.reloadCurrentPage();
+};
+
 AGCollection.prototype.create = async function (newValue) {
   let query = {
     type: this.type,
