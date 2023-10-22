@@ -342,6 +342,7 @@ AGCollection.prototype.loadData = async function () {
     this.meta.count = result.count;
   }
 
+  let oldLastPageState = this.meta.isLastPage;
   this.meta.isLastPage = result.isLastPage;
 
   let oldStateString = oldValue.map(resource => resource.id).join(',');
@@ -349,7 +350,9 @@ AGCollection.prototype.loadData = async function () {
 
   this._updateModelIsLoaded();
 
-  if (oldStateString === currentStateString) return;
+  if (oldStateString === currentStateString && oldLastPageState === this.meta.isLastPage) {
+    return;
+  };
 
   let event = {
     resourceType: this.type,
