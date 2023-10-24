@@ -4,11 +4,10 @@
   "description": "SocketCluster collection component for the front end",
   "main": "ag-collection.js",
   "dependencies": {
+    "ag-model": "^1.4.1",
     "async-stream-emitter": "^7.0.1",
-    "sc-json-stable-stringify": "^2.0.0",
-    "ag-model": "^1.4.0"
+    "sc-json-stable-stringify": "^2.0.0"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

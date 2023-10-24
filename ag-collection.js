@@ -215,6 +215,21 @@ function AGCollection(options) {
   })();
 
   (async () => {
+    let consumer = this.socket.listener('close').createConsumer();
+    this._socketListenerConsumerIds.push(consumer.id);
+    while (true) {
+      let packet = await consumer.next();
+      if (packet.done) {
+        if (!this.active) {
+          break;
+        }
+      } else {
+        useFastInitLoad = false;
+      }
+    }
+  })();
+
+  (async () => {
     let consumer = this.socket.listener('authenticate').createConsumer();
     this._socketListenerConsumerIds.push(consumer.id);
     while (true) {
