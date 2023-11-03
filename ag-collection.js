@@ -276,6 +276,7 @@ AGCollection.prototype.loadData = async function () {
   this.isLoaded = false;
 
   let query = {
+    action: 'read',
     type: this.type
   };
   query.offset = this.meta.pageOffset || 0;
@@ -294,7 +295,7 @@ AGCollection.prototype.loadData = async function () {
 
   let result;
   try {
-    result = await this.socket.invoke('read', query);
+    result = await this.socket.invoke('crud', query);
   } catch (error) {
     this._triggerCollectionError(error);
 
@@ -431,30 +432,33 @@ AGCollection.prototype.fetchPage = function (offset) {
 
 AGCollection.prototype.create = async function (newValue) {
   let query = {
+    action: 'create',
     type: this.type,
     value: newValue
   };
-  return this.socket.invoke('create', query);
+  return this.socket.invoke('crud', query);
 };
 
 AGCollection.prototype.update = function (id, newValue) {
   let query = {
+    action: 'update',
     type: this.type,
     id: id,
     value: newValue
   };
-  return this.socket.invoke('update', query);
+  return this.socket.invoke('crud', query);
 };
 
 AGCollection.prototype.delete = function (id, field) {
   let query = {
+    action: 'delete',
     type: this.type,
     id: id
   };
   if (field != null) {
     query.field = field;
   }
-  return this.socket.invoke('delete', query);
+  return this.socket.invoke('crud', query);
 };
 
 AGCollection.prototype.destroy = function () {
