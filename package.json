@@ -1,10 +1,10 @@
 {
   "name": "ag-collection",
-  "version": "4.1.4",
+  "version": "5.0.0",
   "description": "SocketCluster collection component for the front end",
   "main": "ag-collection.js",
   "dependencies": {
-    "ag-model": "^2.1.2",
+    "ag-model": "^3.0.0",
     "async-stream-emitter": "^7.0.1",
     "sc-json-stable-stringify": "^2.0.0"
   },
