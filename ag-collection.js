@@ -5,7 +5,7 @@ import AGModel from '../ag-model/ag-model.js';
 function AGCollection(options) {
   AsyncStreamEmitter.call(this);
 
-  this.active = true;
+  this.isActive = true;
   this.socket = options.socket;
   this.type = options.type;
   this.fields = options.fields || [];
@@ -81,7 +81,7 @@ function AGCollection(options) {
       while (true) {
         let packet = await consumer.next();
         if (packet.done) {
-          if (!this.active) {
+          if (!this.isActive) {
             break;
           }
         } else {
@@ -132,7 +132,7 @@ function AGCollection(options) {
     while (true) {
       let packet = await consumer.next();
       if (packet.done) {
-        if (!this.active) {
+        if (!this.isActive) {
           if (this._reloadTimeoutId != null) {
             clearTimeout(this._reloadTimeoutId);
           }
@@ -183,7 +183,7 @@ function AGCollection(options) {
     while (true) {
       let packet = await consumer.next();
       if (packet.done) {
-        if (!this.active) {
+        if (!this.isActive) {
           break;
         }
       } else {
@@ -204,7 +204,7 @@ function AGCollection(options) {
     while (true) {
       let packet = await consumer.next();
       if (packet.done) {
-        if (!this.active) {
+        if (!this.isActive) {
           break;
         }
       } else {
@@ -220,7 +220,7 @@ function AGCollection(options) {
     while (true) {
       let packet = await consumer.next();
       if (packet.done) {
-        if (!this.active) {
+        if (!this.isActive) {
           break;
         }
       } else {
@@ -235,7 +235,7 @@ function AGCollection(options) {
     while (true) {
       let packet = await consumer.next();
       if (packet.done) {
-        if (!this.active) {
+        if (!this.isActive) {
           break;
         }
       } else {
@@ -461,12 +461,12 @@ AGCollection.prototype.delete = function (id, field) {
   return this.socket.invoke('crud', query);
 };
 
-AGCollection.prototype.destroy = function () {
+AGCollection.prototype.destroy = async function () {
   this.killAllListeners();
-  if (!this.active) {
+  if (!this.isActive) {
     return;
   }
-  this.active = false;
+  this.isActive = false;
 
   this._socketListenerConsumerIds.forEach((consumerId) => {
     this.socket.killListenerConsumer(consumerId);
@@ -488,10 +488,12 @@ AGCollection.prototype.destroy = function () {
       this.channel.unsubscribe();
     }
   }
-  Object.values(this.agModels).forEach((model) => {
-    model.destroy();
-    this.emit('modelDestroy', model);
-  });
+  await Promise.all(
+    Object.values(this.agModels).map(async (model) => {
+      await model.destroy();
+      this.emit('modelDestroy', model);
+    })
+  );
 };
 
 export default AGCollection;
