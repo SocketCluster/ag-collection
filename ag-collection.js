@@ -46,7 +46,9 @@ function AGCollection(options) {
   };
 
   this._updateModelIsLoaded = () => {
-    if (!this.isLoaded) {
+    if (this.isLoaded) {
+      this.isLoaded = Object.values(this.agModels).every(model => model.isLoaded);
+    } else {
       this.isLoaded = Object.values(this.agModels).every(model => model.isLoaded);
       if (this.isLoaded) {
         this.emit('load', {});
