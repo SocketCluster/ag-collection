@@ -100,6 +100,11 @@ function AGCollection(options) {
 
   let channelPrefix = 'crud>';
   let viewParamsObject = this.viewParams || {};
+  let subscribeOptions = {
+    data: {
+      viewParams: viewParamsObject
+    }
+  };
   let viewPrimaryParams = {};
 
   this.viewPrimaryFields.forEach(function (field) {
@@ -107,12 +112,6 @@ function AGCollection(options) {
   });
   let viewPrimaryParamsString = jsonStableStringify(viewPrimaryParams);
   let viewChannelName = `${channelPrefix}${this.view}(${viewPrimaryParamsString}):${this.type}`;
-
-  let subscribeOptions = {
-    data: {
-      viewParams: viewParamsObject
-    }
-  };
 
   this.channel = this.socket.subscribe(viewChannelName, subscribeOptions);
 
@@ -241,7 +240,11 @@ function AGCollection(options) {
           break;
         }
       } else {
-        this.channel.subscribe();
+        this.channel.subscribe({
+          data: {
+            viewParams: this.viewParams || {}
+          }
+        });
       }
     }
   })();
