@@ -9,6 +9,7 @@ function AGCollection(options) {
   this.socket = options.socket;
   this.type = options.type;
   this.fields = options.fields || [];
+  this.fieldTransformations = options.fieldTransformations || {};
   this.isLoaded = false;
   this.defaultFieldValues = options.defaultFieldValues;
   this.view = options.view;
@@ -330,6 +331,7 @@ AGCollection.prototype.loadData = async function () {
         type: this.type,
         id: tempId,
         fields: this.fields,
+        fieldTransformations: this.fieldTransformations,
         defaultFieldValues: this.defaultFieldValues,
         passiveMode: this.passiveMode
       });
