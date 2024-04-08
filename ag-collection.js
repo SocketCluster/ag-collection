@@ -21,7 +21,7 @@ function AGCollection(options) {
   }
   this.meta = {
     pageOffset: options.pageOffset || 0,
-    pageSize: options.pageSize || 10,
+    pageSize: options.pageSize == null ? 10 : options.pageSize,
     isLastPage: null,
     count: null
   };
@@ -292,7 +292,7 @@ AGCollection.prototype.loadData = async function () {
   if (this.viewParams != null) {
     query.viewParams = this.viewParams;
   }
-  if (this.meta.pageSize) {
+  if (this.meta.pageSize != null) {
     query.pageSize = this.meta.pageSize;
   }
   if (this.getCount) {
