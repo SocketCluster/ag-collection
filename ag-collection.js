@@ -111,6 +111,12 @@ function AGCollection(options) {
   this.viewPrimaryFields.forEach(function (field) {
     viewPrimaryParams[field] = viewParamsObject[field] === undefined ? null : viewParamsObject[field];
   });
+  if (!options.typedViewChannelParams) {
+    for (let [key, value] of Object.entries(viewPrimaryParams)) {
+      viewPrimaryParams[key] = String(value);
+    }
+  }
+
   let viewPrimaryParamsString = jsonStableStringify(viewPrimaryParams);
   let viewChannelName = `${channelPrefix}${this.view}(${viewPrimaryParamsString}):${this.type}`;
 
