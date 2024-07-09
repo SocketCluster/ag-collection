@@ -20,6 +20,10 @@ function AGCollection(options) {
     this.viewPrimaryFields = options.viewPrimaryFields;
   }
   this.meta = {
+    type: this.type,
+    view: this.view,
+    viewParams: this.viewParams,
+    viewPrimaryFields: this.viewPrimaryFields,
     pageOffset: options.pageOffset || 0,
     pageSize: options.pageSize == null ? 10 : options.pageSize,
     isLastPage: null,
