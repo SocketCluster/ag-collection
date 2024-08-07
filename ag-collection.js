@@ -457,23 +457,42 @@ AGCollection.prototype.create = async function (newValue) {
 };
 
 AGCollection.prototype.update = function (id, newValue) {
+  let activeModel = this.agModels[id];
+  if (activeModel) {
+    return Promise.all(
+      Object.entries(newValue || {}).map(([ key, value ]) => {
+        return activeModel.update(key, value);
+      })
+    );
+  }
   let query = {
     action: 'update',
     type: this.type,
-    id: id,
+    id,
     value: newValue
   };
   return this.socket.invoke('crud', query);
 };
 
 AGCollection.prototype.delete = function (id, field) {
-  let query = {
-    action: 'delete',
-    type: this.type,
-    id: id
-  };
-  if (field != null) {
-    query.field = field;
+  let query;
+  if (field == null) {
+    query = {
+      action: 'delete',
+      type: this.type,
+      id
+    };
+  } else {
+    let activeModel = this.agModels[id];
+    if (activeModel) {
+      return activeModel.delete(field);
+    }
+    query = {
+      action: 'delete',
+      type: this.type,
+      id,
+      field
+    };
   }
   return this.socket.invoke('crud', query);
 };
