@@ -1,6 +1,6 @@
 {
   "name": "ag-collection",
-  "version": "5.3.1",
+  "version": "5.3.2",
   "description": "SocketCluster collection component for the front end",
   "main": "ag-collection.js",
   "dependencies": {
