@@ -384,6 +384,8 @@ AGCollection.prototype.loadData = async function () {
     }
   });
 
+  let oldCountState = this.meta.count;
+
   if (result.count != null) {
     this.meta.count = result.count;
   }
@@ -396,7 +398,11 @@ AGCollection.prototype.loadData = async function () {
 
   this._updateModelIsLoaded();
 
-  if (oldStateString === currentStateString && oldLastPageState === this.meta.isLastPage) {
+  if (
+    oldStateString === currentStateString &&
+    oldLastPageState === this.meta.isLastPage &&
+    oldCountState === this.meta.count
+  ) {
     return;
   };
 
